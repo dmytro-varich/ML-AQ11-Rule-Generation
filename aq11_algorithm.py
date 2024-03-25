@@ -49,5 +49,5 @@ def main():
     # 
     separated_data = separation_data(processed_dataset)
 
-if name == 'main':
+if __name__ == '__main__':
     main()
