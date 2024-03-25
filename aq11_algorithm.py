@@ -27,8 +27,9 @@ def preprocess_data(dataset):
     return df
 
 def separation_data(data) -> dict:
-    E1 = data[data['y'] == 1]
-    E2 = data[data['y'] == 0]
+    my_attributes = ['age', 'job', 'marital', 'education', 'default', 'balance', 'housing', 'loan', 'contact', 'duration']
+    E1 = data[data['y'] == 1][my_attributes][:80]
+    E2 = data[data['y'] == 0][my_attributes][:80]
 
     E1_train, E1_test = train_test_split(E1, test_size=0.33, random_state=42)
     E2_train, E2_test = train_test_split(E2, test_size=0.33, random_state=42)
