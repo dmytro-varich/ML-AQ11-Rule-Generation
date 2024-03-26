@@ -54,8 +54,17 @@ def separation_data(data) -> dict:
 
     return {'E1': (E1_test, E1_train), 'E2': (E2_test, E2_train)}
 
-def aq11(E1, E2):
-    pass 
+def aq11(E1, E2, Generated_Rules=None):
+    if Generated_Rules is None:
+        for _, E1_row in E1.iterrows():
+            for _, E1_value in E1_row.items():
+                for _, E2_row in E2.iterrows():
+                    for _, E2_value in E2_row.items():
+                        pass
+            if len(E1_row) == 0:
+                return None               
+    else: 
+        pass        
 
 def main():
     # 
@@ -63,12 +72,16 @@ def main():
 
     # 
     processed_dataset = preprocess_data(bank_marketing) 
-   
-    # 
     separated_data = separation_data(processed_dataset)
 
     # 
-    aq11(separated_data['E1'][0], separated_data['E2'][0])
+    E1_test, E2_test = separated_data['E1'][0], separated_data['E2'][0]
+    Generated_Rules = aq11(E1_test, E2_test)
+
+    # 
+    E1_train, E2_train = separated_data['E1'][1], separated_data['E2'][1]
+    aq11(E1_train, E2_train, Generated_Rules)
+
 
 if __name__ == '__main__':
     main()
