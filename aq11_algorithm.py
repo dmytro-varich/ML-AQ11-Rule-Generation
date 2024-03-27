@@ -56,15 +56,29 @@ def separation_data(data) -> dict:
 
 def aq11(E1, E2, Generated_Rules=None):
     if Generated_Rules is None:
-        for _, E1_row in E1.iterrows():
-            for _, E1_value in E1_row.items():
-                for _, E2_row in E2.iterrows():
-                    for _, E2_value in E2_row.items():
-                        pass
-            if len(E1_row) == 0:
-                return None               
+        E1_E2_rules = str()
+        for E1_index, E1_row in E1.iterrows():
+            E1_rules = list()
+            # condition 
+            # if ... then continue else ... mb down cykle
+            for E2_index, E2_row in E2.iterrows():
+                generate_rules_for_row: list[str] = list()
+                for E1_column, E1_value, _, E2_value in zip(E1_row.items(), E2_row.items()):
+                    if E1_value > E2_value:
+                        generate_rules_for_row.append(f"{E1_column} > {E2_value}")                
+                    elif E1_value < E2_value: 
+                        generate_rules_for_row.append(f"{E1_column} < {E2_value}") 
+                    else:
+                        continue
+                E1_rules.append(generate_rules_for_row)
+
+            # for rules in E1_rules:
+            #     for i=1, rule in rules:
+                        
+            # E1_E2_rules.append()
+                           
     else: 
-        pass        
+        pass # train data -> evaluation the models
 
 def main():
     # 
@@ -79,8 +93,8 @@ def main():
     Generated_Rules = aq11(E1_test, E2_test)
 
     # 
-    E1_train, E2_train = separated_data['E1'][1], separated_data['E2'][1]
-    aq11(E1_train, E2_train, Generated_Rules)
+    # E1_train, E2_train = separated_data['E1'][1], separated_data['E2'][1]
+    # aq11(E1_train, E2_train, Generated_Rules)
 
 
 if __name__ == '__main__':
