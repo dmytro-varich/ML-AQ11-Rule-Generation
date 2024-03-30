@@ -55,27 +55,29 @@ def separation_data(data) -> dict:
     return {'E1': (E1_test, E1_train), 'E2': (E2_test, E2_train)}
 
 def aq11(E1, E2, Generated_Rules=None):
+    def create_metadata(row) -> None:
+        metadata = {}
+        for column, value in row.items():
+            metadata[column] = value 
+    
+        for key, value in metadata.items():
+            globals()[key] = value
+
     if Generated_Rules is None:
         rules_between_E1_and_E2 = list()
-
         for E1_index, E1_row in E1.iterrows():
             E1_generated_rules = list()
-
+            is_covered = False
             for _, E2_row in E2.iterrows():
                 generate_rules_for_row = str()
 
                 for (E1_column, E1_value), (_, E2_value) in zip(E1_row.items(), E2_row.items()):
                     
                     if E1_index > 0:
-                        metadata = dict()
-
-                        for column, value in E1_row.items():
-                            metadata[column] = value 
-
-                        for key, value in metadata.items():
-                            globals()[key] = value 
+                        create_metadata(E1_row)
                         
                         if eval(' or '.join(rules_between_E1_and_E2)): 
+                            is_covered = True
                             break 
                      
                     if E1_value > E2_value:
@@ -86,12 +88,57 @@ def aq11(E1, E2, Generated_Rules=None):
                         continue
 
                 E1_generated_rules.append("(" + generate_rules_for_row[:-4] + ")")
-            rules_between_E1_and_E2.append("(" + ' and '.join(E1_generated_rules) + ")")
-        
-        Generated_Rules = ' or '.join(rules_between_E1_and_E2).replace("() and ()", "").replace("  and  ", "").replace("andand", "").replace("( and )", " ").replace(" or  ", "")
+            if not is_covered:
+                rules_between_E1_and_E2.append("(" + ' and '.join(E1_generated_rules) + ")")
+
+        Generated_Rules = ' or '.join(rules_between_E1_and_E2)
         return Generated_Rules
     else: 
-        pass # test data -> evaluation the models
+        # 
+        metrics_dict = {
+            "TP": 0, 
+            "TN": 0, 
+            "FP": 0, 
+            "FN": 0 
+        }
+
+        #
+        for _, E1_row in E1.iterrows():
+            create_metadata(E1_row)
+
+            if eval(Generated_Rules):
+                metrics_dict["TP"] += 1
+            else: 
+                metrics_dict["TN"] += 1
+        
+        #
+        for _, E2_row in E2.iterrows():
+            create_metadata(E2_row)
+
+            if eval(Generated_Rules):
+                metrics_dict["FP"] += 1
+            else: 
+                metrics_dict["FN"] += 1
+        
+        # 
+        return metrics_dict
+
+def evaluate_metrics(TP, TN, FP, FN) -> None:
+    total_metrics_sum = sum((TP, TN, FP, FN))
+
+    #
+    precision = TP / (TP + FP)
+    recall = TP / (TP + FN)
+    f1_score = 2 * (precision * recall) / (precision + recall)
+    accuracy = (TP + TN) / total_metrics_sum
+    error_rate = (FP + FN) / total_metrics_sum
+
+    # 
+    print(f"Precision: {precision} %")
+    print(f"Recall: {recall} %")
+    print(f"F1-Score: {f1_score} %")
+    print(f"Accuracy: {accuracy} %")
+    print(f"Error Rate: {error_rate} %")
 
 def main():
     # 
@@ -104,10 +151,13 @@ def main():
     # 
     E1_test, E2_test = separated_data['E1'][0].reset_index(drop=True), separated_data['E2'][0].reset_index(drop=True)
     Generated_Rules = aq11(E1_test, E2_test)
-    print(Generated_Rules)
+
     # 
-    # E1_train, E2_train = separated_data['E1'][1].reset_index(drop=True), separated_data['E2'][1].reset_index(drop=True)
-    # aq11(E1_train, E2_train, Generated_Rules)
+    E1_train, E2_train = separated_data['E1'][1].reset_index(drop=True), separated_data['E2'][1].reset_index(drop=True)
+    metrics_data = aq11(E1_train, E2_train, Generated_Rules)
+
+    # 
+    evaluate_metrics(metrics_data['TP'], metrics_data['TN'], metrics_data['FP'], metrics_data['FN'])  
 
 
 if __name__ == '__main__':
