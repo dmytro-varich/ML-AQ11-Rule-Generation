@@ -52,18 +52,16 @@ def separation_data(data) -> dict:
     E1_train, E1_test = train_test_split(E1, test_size=0.5)
     E2_train, E2_test = train_test_split(E2, test_size=0.5)
 
-    return {'E1': (E1_test, E1_train), 'E2': (E2_test, E2_train)}
+    return {'E1': (E1_train, E1_test), 'E2': (E2_train, E2_test)}
 
 def aq11(E1, E2, Generated_Rules=None):
     def create_metadata(row) -> None:
-        metadata = {}
+        metadata = dict()
         for column, value in row.items():
             metadata[column] = value 
-    
-        for key, value in metadata.items():
-            globals()[key] = value
+        return metadata
 
-    if Generated_Rules is None:
+    if not Generated_Rules:
         rules_between_E1_and_E2 = list()
         for E1_index, E1_row in E1.iterrows():
             E1_generated_rules = list()
@@ -74,9 +72,9 @@ def aq11(E1, E2, Generated_Rules=None):
                 for (E1_column, E1_value), (_, E2_value) in zip(E1_row.items(), E2_row.items()):
                     
                     if E1_index > 0:
-                        create_metadata(E1_row)
+                        metadata = create_metadata(E1_row)
                         
-                        if eval(' or '.join(rules_between_E1_and_E2)): 
+                        if eval(' or '.join(rules_between_E1_and_E2), None, metadata): 
                             is_covered = True
                             break 
                      
@@ -104,18 +102,18 @@ def aq11(E1, E2, Generated_Rules=None):
 
         #
         for _, E1_row in E1.iterrows():
-            create_metadata(E1_row)
+            metadata = create_metadata(E1_row)
 
-            if eval(Generated_Rules):
+            if eval(Generated_Rules, None, metadata):
                 metrics_dict["TP"] += 1
             else: 
                 metrics_dict["TN"] += 1
         
         #
         for _, E2_row in E2.iterrows():
-            create_metadata(E2_row)
+            metadata = create_metadata(E2_row)
 
-            if eval(Generated_Rules):
+            if eval(Generated_Rules, None, metadata):
                 metrics_dict["FP"] += 1
             else: 
                 metrics_dict["FN"] += 1
@@ -134,11 +132,11 @@ def evaluate_metrics(TP, TN, FP, FN) -> None:
     error_rate = (FP + FN) / total_metrics_sum
 
     # 
-    print(f"Precision: {precision} %")
-    print(f"Recall: {recall} %")
-    print(f"F1-Score: {f1_score} %")
-    print(f"Accuracy: {accuracy} %")
-    print(f"Error Rate: {error_rate} %")
+    print(f"Precision: {precision * 100:.3f}%")
+    print(f"Recall: {recall * 100:.3f}%")
+    print(f"F1-Score: {f1_score * 100:.3f}%")
+    print(f"Accuracy: {accuracy * 100:.3f}%")
+    print(f"Error Rate: {error_rate * 100:.3f}%")
 
 def main():
     # 
@@ -149,12 +147,12 @@ def main():
     separated_data = separation_data(processed_dataset)
 
     # 
-    E1_test, E2_test = separated_data['E1'][0].reset_index(drop=True), separated_data['E2'][0].reset_index(drop=True)
-    Generated_Rules = aq11(E1_test, E2_test)
+    E1_train, E2_train = separated_data['E1'][0].reset_index(drop=True), separated_data['E2'][0].reset_index(drop=True)
+    Generated_Rules = aq11(E1_train, E2_train)
 
     # 
-    E1_train, E2_train = separated_data['E1'][1].reset_index(drop=True), separated_data['E2'][1].reset_index(drop=True)
-    metrics_data = aq11(E1_train, E2_train, Generated_Rules)
+    E1_test, E2_test = separated_data['E1'][1].reset_index(drop=True), separated_data['E2'][1].reset_index(drop=True)
+    metrics_data = aq11(E1_test, E2_test, Generated_Rules)
 
     # 
     evaluate_metrics(metrics_data['TP'], metrics_data['TN'], metrics_data['FP'], metrics_data['FN'])  
