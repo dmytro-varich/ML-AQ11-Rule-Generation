@@ -132,11 +132,11 @@ def evaluate_metrics(TP, TN, FP, FN) -> None:
     error_rate = (FP + FN) / total_metrics_sum
 
     # 
-    print(f"Precision: {precision * 100:.3f}%")
-    print(f"Recall: {recall * 100:.3f}%")
-    print(f"F1-Score: {f1_score * 100:.3f}%")
-    print(f"Accuracy: {accuracy * 100:.3f}%")
-    print(f"Error Rate: {error_rate * 100:.3f}%")
+    print(f"Precision: {precision * 100:.0f}%")
+    print(f"Recall: {recall * 100:.0f}%")
+    print(f"F1-Score: {f1_score * 100:.0f}%")
+    print(f"Accuracy: {accuracy * 100:.0f}%")
+    print(f"Error Rate: {error_rate * 100:.0f}%")
 
 def main():
     # 
