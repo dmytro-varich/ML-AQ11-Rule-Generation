@@ -1,6 +1,7 @@
 # import libraries
 import pandas as pd
 from ucimlrepo import fetch_ucirepo 
+from tabulate import tabulate 
 from sklearn.model_selection import train_test_split
 
 def preprocess_data(dataset):
@@ -54,46 +55,45 @@ def separation_data(data) -> dict:
 
     return {'E1': (E1_train, E1_test), 'E2': (E2_train, E2_test)}
 
-def aq11(E1, E2, Generated_Rules=None):
-    def create_metadata(row) -> None:
-        metadata = dict()
-        for column, value in row.items():
-            metadata[column] = value 
-        return metadata
-
+def aq11(E1, E2, Generated_Rules: str = None) -> str | dict[str: int]:
+    # 
     if not Generated_Rules:
-        rules_between_E1_and_E2 = list()
-        for E1_index, E1_row in E1.iterrows():
-            E1_generated_rules = list()
-            is_covered = False
+        #
+        rules_between_E1_and_E2 = set()
+        
+        #
+        for _, E1_row in E1.iterrows():
+            # 
+            E1_generated_rules = set()
+            
+            # 
             for _, E2_row in E2.iterrows():
                 generate_rules_for_row = str()
 
-                for (E1_column, E1_value), (_, E2_value) in zip(E1_row.items(), E2_row.items()):
+                # 
+                for E2_column, E2_value in E2_row.items():
                     
-                    if E1_index > 0:
-                        metadata = create_metadata(E1_row)
-                        
-                        if eval(' or '.join(rules_between_E1_and_E2), None, metadata): 
-                            is_covered = True
-                            break 
-                     
-                    if E1_value > E2_value:
-                        generate_rules_for_row += f"{E1_column} > {E2_value} or "                
-                    elif E1_value < E2_value: 
-                        generate_rules_for_row += f"{E1_column} < {E2_value} or " 
-                    else:
-                        continue
+                    if E1_row[E2_column] > E2_value:
+                        generate_rules_for_row += f"{E2_column} > {E2_value} or "                
+                    elif E1_row[E2_column] < E2_value: 
+                        generate_rules_for_row += f"{E2_column} < {E2_value} or " 
 
-                E1_generated_rules.append("(" + generate_rules_for_row[:-4] + ")")
-            if not is_covered:
-                rules_between_E1_and_E2.append("(" + ' and '.join(E1_generated_rules) + ")")
+                E1_generated_rules.add("(" + generate_rules_for_row[:-4] + ")")
+      
+            rules_between_E1_and_E2.add("(" + ' and '.join(E1_generated_rules) + ")")
 
-        Generated_Rules = ' or '.join(rules_between_E1_and_E2)
+        Generated_Rules: str = ' or '.join(rules_between_E1_and_E2)
         return Generated_Rules
     else: 
+        #
+        def create_metadata(row) -> None:
+            metadata = dict()
+            for column, value in row.items():
+                metadata[column] = value 
+            return metadata
+        
         # 
-        metrics_dict = {
+        metrics_dict: dict = {
             "TP": 0, 
             "TN": 0, 
             "FP": 0, 
@@ -107,7 +107,7 @@ def aq11(E1, E2, Generated_Rules=None):
             if eval(Generated_Rules, None, metadata):
                 metrics_dict["TP"] += 1
             else: 
-                metrics_dict["TN"] += 1
+                metrics_dict["FN"] += 1
         
         #
         for _, E2_row in E2.iterrows():
@@ -116,14 +116,15 @@ def aq11(E1, E2, Generated_Rules=None):
             if eval(Generated_Rules, None, metadata):
                 metrics_dict["FP"] += 1
             else: 
-                metrics_dict["FN"] += 1
+                metrics_dict["TN"] += 1
         
         # 
         return metrics_dict
 
-def evaluate_metrics(TP, TN, FP, FN) -> None:
+def evaluate_metrics(TP: int, TN: int, FP: int, FN: int) -> None:
+    #
     total_metrics_sum = sum((TP, TN, FP, FN))
-
+    
     #
     precision = TP / (TP + FP)
     recall = TP / (TP + FN)
@@ -131,12 +132,27 @@ def evaluate_metrics(TP, TN, FP, FN) -> None:
     accuracy = (TP + TN) / total_metrics_sum
     error_rate = (FP + FN) / total_metrics_sum
 
-    # 
-    print(f"Precision: {precision * 100:.0f}%")
-    print(f"Recall: {recall * 100:.0f}%")
-    print(f"F1-Score: {f1_score * 100:.0f}%")
-    print(f"Accuracy: {accuracy * 100:.0f}%")
-    print(f"Error Rate: {error_rate * 100:.0f}%")
+    #
+    metrics_data = [
+        ("True Positive", TP, "False Negative", FN), 
+        ("True Negative", TN, "False Positive", FP)
+    ]
+    confusion_matrix_table = tabulate(metrics_data, tablefmt="pretty")
+
+
+    metrics_data = [
+        ("Precision",  f"{precision * 100:.0f}%"),
+        ("Recall",     f"{recall * 100:.0f}%"),
+        ("F1-Score",   f"{f1_score * 100:.0f}%"), 
+        ("Accuracy",   f"{accuracy * 100:.0f}%"),
+        ("Error Rate", f"{error_rate * 100:.0f}%")
+    ]    
+    metrics_table = tabulate(metrics_data, tablefmt="pretty")
+
+
+    #
+    print(f"Confusion Matrix: \n{confusion_matrix_table}\n")
+    print(f"Performance Metrics: \n{metrics_table}")
 
 def main():
     # 
@@ -154,9 +170,13 @@ def main():
     E1_test, E2_test = separated_data['E1'][1].reset_index(drop=True), separated_data['E2'][1].reset_index(drop=True)
     metrics_data = aq11(E1_test, E2_test, Generated_Rules)
 
+    print(E1_train)
+    print(E2_train)
+    
+    print(E1_test)
+    print(E2_test)
     # 
     evaluate_metrics(metrics_data['TP'], metrics_data['TN'], metrics_data['FP'], metrics_data['FN'])  
-
 
 if __name__ == '__main__':
     main()
