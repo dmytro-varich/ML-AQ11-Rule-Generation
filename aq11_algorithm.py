@@ -37,7 +37,7 @@ def preprocess_data(dataset):
 
     return df
 
-def separation_data(data) -> dict:
+def separation_data(data, num_row) -> dict:
     #
     my_attributes = ['age', 'job', 'marital', 'education', 'balance', 'housing', 'loan', 'contact', 'duration']
     
@@ -46,8 +46,8 @@ def separation_data(data) -> dict:
     E2 = data[data['y'] == 0][my_attributes]
 
     # 
-    E1 = E1.sample(n=40)
-    E2 = E2.sample(n=40)
+    E1 = E1.sample(n=num_row)
+    E2 = E2.sample(n=num_row)
 
     # 
     E1_train, E1_test = train_test_split(E1, test_size=0.5)
@@ -56,6 +56,13 @@ def separation_data(data) -> dict:
     return {'E1': (E1_train, E1_test), 'E2': (E2_train, E2_test)}
 
 def aq11(E1, E2, Generated_Rules: str = None) -> str | dict[str: int]:
+    #
+    def create_metadata(row) -> None:
+        metadata = dict()
+        for column, value in row.items():
+            metadata[column] = value 
+        return metadata
+        
     # 
     if not Generated_Rules:
         #
@@ -65,7 +72,12 @@ def aq11(E1, E2, Generated_Rules: str = None) -> str | dict[str: int]:
         for _, E1_row in E1.iterrows():
             # 
             E1_generated_rules = set()
-            
+
+            # 
+            metadata = create_metadata(E1_row)
+            if eval("(" + ' or '.join(rules_between_E1_and_E2) + ")", None, metadata):
+                continue
+
             # 
             for _, E2_row in E2.iterrows():
                 generate_rules_for_row = str()
@@ -77,21 +89,15 @@ def aq11(E1, E2, Generated_Rules: str = None) -> str | dict[str: int]:
                         generate_rules_for_row += f"{E2_column} > {E2_value} or "                
                     elif E1_row[E2_column] < E2_value: 
                         generate_rules_for_row += f"{E2_column} < {E2_value} or " 
-
-                E1_generated_rules.add("(" + generate_rules_for_row[:-4] + ")")
+                
+                if generate_rules_for_row:
+                    E1_generated_rules.add("(" + generate_rules_for_row[:-4] + ")")
       
             rules_between_E1_and_E2.add("(" + ' and '.join(E1_generated_rules) + ")")
 
-        Generated_Rules: str = ' or '.join(rules_between_E1_and_E2)
+        Generated_Rules: str = "(" + ' or '.join(rules_between_E1_and_E2) + ")"
         return Generated_Rules
     else: 
-        #
-        def create_metadata(row) -> None:
-            metadata = dict()
-            for column, value in row.items():
-                metadata[column] = value 
-            return metadata
-        
         # 
         metrics_dict: dict = {
             "TP": 0, 
@@ -157,24 +163,20 @@ def evaluate_metrics(TP: int, TN: int, FP: int, FN: int) -> None:
 def main():
     # 
     bank_marketing = fetch_ucirepo(id=222) 
-
+    
     # 
     processed_dataset = preprocess_data(bank_marketing) 
-    separated_data = separation_data(processed_dataset)
+    separated_data = separation_data(processed_dataset, 40)
 
     # 
     E1_train, E2_train = separated_data['E1'][0].reset_index(drop=True), separated_data['E2'][0].reset_index(drop=True)
     Generated_Rules = aq11(E1_train, E2_train)
+    print("Generated Rules:\n" + Generated_Rules + "\n")
 
     # 
     E1_test, E2_test = separated_data['E1'][1].reset_index(drop=True), separated_data['E2'][1].reset_index(drop=True)
     metrics_data = aq11(E1_test, E2_test, Generated_Rules)
 
-    print(E1_train)
-    print(E2_train)
-    
-    print(E1_test)
-    print(E2_test)
     # 
     evaluate_metrics(metrics_data['TP'], metrics_data['TN'], metrics_data['FP'], metrics_data['FN'])  
 
