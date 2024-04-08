@@ -3,6 +3,7 @@ import pandas as pd
 from ucimlrepo import fetch_ucirepo 
 from tabulate import tabulate 
 from sklearn.model_selection import train_test_split
+from pandas.api.types import is_object_dtype
 
 # Function to preprocess the data.
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -14,7 +15,7 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.loc[df['job'].isin(selected_categories)]
     
     # Convert 'age' into categorical bins.
-    bins = [17, 44, 59, 74, 100]
+    bins = [17, 44, 59, 74, float('inf')]
     labels = [0, 1, 2, 3]
     df['age'] = pd.cut(df['age'], bins=bins, labels=labels)
     
@@ -28,23 +29,18 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     labels = [0, 1, 2, 3]
     df['duration'] = pd.cut(df['duration'], bins=bins, labels=labels)
 
-    # Convert categorical attributes into numeric codes.
-    categorical_attributes = ['job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'poutcome', 'y']    
-    for column in categorical_attributes:
-        df[column] = df[column].astype('category').cat.codes
+    # Convert target attribute into numeric codes.
+    df['y'] = df['y'].astype('category').cat.codes
 
     # Drop any rows with missing values.
     df = df.dropna()
     return df
 
 # Function to separate data into two sets.
-def separation_data(data: pd.DataFrame, num_row: int) -> dict:
-    # Attributes to consider.
-    my_attributes = ['age', 'job', 'education', 'balance', 'housing', 'loan']
-  
+def separation_data(data: pd.DataFrame, num_row: int, attributes: list) -> dict:
     # Separate data based on target variable 'y'.
-    E1 = data[data['y'] == 0][my_attributes]
-    E2 = data[data['y'] == 1][my_attributes]
+    E1 = data[data['y'] == 1][attributes]
+    E2 = data[data['y'] == 0][attributes]
 
     # Sample the data to specified number of rows.
     E1 = E1.sample(n=num_row)
@@ -64,6 +60,10 @@ def aq11(E1: pd.DataFrame, E2: pd.DataFrame, Generated_Rules: str = None) -> str
         for column, value in row.items():
             metadata[column] = value 
         return metadata
+    
+    #
+    def absorption_law():
+        pass
         
     # Generate rules if none provided, else evaluate metrics. 
     if not Generated_Rules:
@@ -89,11 +89,17 @@ def aq11(E1: pd.DataFrame, E2: pd.DataFrame, Generated_Rules: str = None) -> str
 
                 # Iterate through each column and value in the current E2 row.
                 for E2_column, E2_value in E2_row.items():
-                    # Generate a rule based on the comparison between E1 and E2 values.
-                    if E1_row[E2_column] > E2_value:
-                        generate_rules_for_row.add(f"{E2_column} > {E2_value}")                
-                    elif E1_row[E2_column] < E2_value: 
-                        generate_rules_for_row.add(f"{E2_column} < {E2_value}") 
+                    #
+                    if E2[E2_column].dtype == object:
+                        # 
+                        if E1_row[E2_column] != E2_value:
+                            generate_rules_for_row.add(f"{E2_column} != '{E2_value}'")
+                    else: 
+                        # Generate a rule based on the comparison between E1 and E2 values.
+                        if E1_row[E2_column] > E2_value:
+                            generate_rules_for_row.add(f"{E2_column} > {E2_value}")                
+                        elif E1_row[E2_column] < E2_value: 
+                            generate_rules_for_row.add(f"{E2_column} < {E2_value}") 
                 
                 # If there are generated rules for the current row, add them to the set of rules for E1.
                 if generate_rules_for_row:                    
@@ -101,7 +107,7 @@ def aq11(E1: pd.DataFrame, E2: pd.DataFrame, Generated_Rules: str = None) -> str
             
             # Add the set of generated rules for the current E1 row to the set of rules between E1 and E2.
             rules_between_E1_and_E2.add("(" + ' and '.join(E1_generated_rules) + ")")
-        
+            
         # Combine all generated rules into a single string.
         Generated_Rules: str = "(" + ' or '.join(rules_between_E1_and_E2) + ")"
 
@@ -177,11 +183,20 @@ def main() -> None:
     # Fetch dataset.
     bank_marketing = fetch_ucirepo(id=222) 
     dataset = bank_marketing.data.original
-    
-    # Separate data into train and test sets. 
-    processed_dataset = preprocess_data(dataset) 
-    separated_data = separation_data(processed_dataset, 40)
 
+    # Attributes to consider.
+    my_attributes = ['age', 'job', 'marital', 'education', 'default', 
+                     'balance', 'housing', 'loan', 'contact', 'duration']
+    my_attributes = ['age', 'job', 'education', 'balance', 'housing', 'loan']
+  
+
+    # my_attributes = ['job', 'marital', 'education']
+    # 
+    processed_dataset = preprocess_data(dataset)
+    separated_data = separation_data(processed_dataset, 100, my_attributes)
+
+    # print(processed_dataset.info())
+    # print(processed_dataset.head())
     # Train and generate rules.
     E1_train, E2_train = separated_data['E1'][0].reset_index(drop=True), separated_data['E2'][0].reset_index(drop=True)
     Generated_Rules = aq11(E1_train, E2_train)
