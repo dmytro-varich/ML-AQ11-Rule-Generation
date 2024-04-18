@@ -230,7 +230,7 @@ def main() -> None:
     dataset = bank_marketing.data.original
 
     # Attributes to consider.
-    my_attributes = ['age', 'job', 'marital', 'education', 'duration', 'balance']
+    my_attributes = ['age', 'job', 'marital', 'education', 'balance', 'loan', 'housing', 'duration']
 
     # 
     processed_dataset = preprocess_data(dataset)
