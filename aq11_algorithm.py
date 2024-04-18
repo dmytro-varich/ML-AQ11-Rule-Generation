@@ -3,7 +3,7 @@ import pandas as pd
 from ucimlrepo import fetch_ucirepo 
 from tabulate import tabulate 
 from sklearn.model_selection import train_test_split
-from pandas.api.types import is_object_dtype
+from collections import defaultdict
 
 # Function to preprocess the data.
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -37,10 +37,10 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 # Function to separate data into two sets.
-def separation_data(data: pd.DataFrame, num_row: int, attributes: list) -> dict:
+def separation_data(data: pd.DataFrame, num_row: int, attributes: list[str]) -> dict[str: pd.DataFrame]:
     # Separate data based on target variable 'y'.
-    E1 = data[data['y'] == 1][attributes]
-    E2 = data[data['y'] == 0][attributes]
+    E1 = data[data['y'] == 0][attributes]
+    E2 = data[data['y'] == 1][attributes]
 
     # Sample the data to specified number of rows.
     E1 = E1.sample(n=num_row)
@@ -62,8 +62,50 @@ def aq11(E1: pd.DataFrame, E2: pd.DataFrame, Generated_Rules: str = None) -> str
         return metadata
     
     #
-    def absorption_law():
-        pass
+    def custom_absorption_law(rules: list[tuple[str]]) -> str:
+        #
+        simplified_rules = []
+        for i, rule_i in enumerate(rules[:-1]):
+            rule_set = set(rule_i)
+            update_dict_condition = defaultdict(str)
+            for rule_j in rules[i+1:]:
+                common_condition_count = 0
+                s_rule = set(rule_j)
+                for condition1 in rule_set:
+                    if condition1 in s_rule:
+                        common_condition_count += 1
+                    else: 
+                        attribute1, sign1, value1 = condition1.split()
+                        for condition2 in s_rule:
+                            attribute2, sign2, value2 = condition2.split()
+                            if attribute1 == attribute2 and sign1 == sign2 == ">" and value1 != value2:
+                                max_val = max(int(value1), int(value2))
+                                common_condition_count += 1
+                                update_dict_condition[condition1] = f"{attribute1} {sign1} {max_val}"
+                            elif attribute1 == attribute2 and sign1 == sign2 == "<" and value1 != value2:
+                                min_val = min(int(value1), int(value2))
+                                common_condition_count += 1
+                                update_dict_condition[condition1] = f"{attribute1} {sign1} {min_val}"
+                            
+                if len(rule_set) == common_condition_count:
+                    temp_rule_set = rule_set.copy()
+                    for key, value in update_dict_condition.items():
+                        temp_rule_set.remove(key)
+                        temp_rule_set.add(value)
+                    if temp_rule_set not in simplified_rules:
+                        simplified_rules.append(temp_rule_set)
+        if not simplified_rules:
+            simplified_rules = rules.copy()
+        # 
+        result_str = ""
+        for i, rule in enumerate(simplified_rules):
+            rule_str = " or ".join(rule)
+            if i == 0:
+                result_str += f"({rule_str})"
+            else:
+                result_str += f" and ({rule_str})"
+        
+        return result_str 
         
     # Generate rules if none provided, else evaluate metrics. 
     if not Generated_Rules:
@@ -72,8 +114,10 @@ def aq11(E1: pd.DataFrame, E2: pd.DataFrame, Generated_Rules: str = None) -> str
         
         # Iterate through each row in E1.
         for _, E1_row in E1.iterrows():
+            generate_rules_for_row: set[tuple[str]] = set()
+
             # Set to store rules generated for the current E1 row.
-            E1_generated_rules = set()
+            # E1_generated_rules = set()
 
             # Create metadata for current E1 row.
             # If any of the rules are satisfied by the metadata of the current row,
@@ -85,28 +129,29 @@ def aq11(E1: pd.DataFrame, E2: pd.DataFrame, Generated_Rules: str = None) -> str
             # Iterate through each row in E2.
             for _, E2_row in E2.iterrows():
                 # Initialize an empty set to store generated rules for the current row.
-                generate_rules_for_row = set()
-
+                set_rules_for_value = list()
+                
                 # Iterate through each column and value in the current E2 row.
                 for E2_column, E2_value in E2_row.items():
                     #
                     if E2[E2_column].dtype == object:
                         # 
                         if E1_row[E2_column] != E2_value:
-                            generate_rules_for_row.add(f"{E2_column} != '{E2_value}'")
+                            set_rules_for_value.append(f"{E2_column} != '{E2_value}'")
                     else: 
                         # Generate a rule based on the comparison between E1 and E2 values.
                         if E1_row[E2_column] > E2_value:
-                            generate_rules_for_row.add(f"{E2_column} > {E2_value}")                
+                            set_rules_for_value.append(f"{E2_column} > {E2_value}")                
                         elif E1_row[E2_column] < E2_value: 
-                            generate_rules_for_row.add(f"{E2_column} < {E2_value}") 
-                
-                # If there are generated rules for the current row, add them to the set of rules for E1.
-                if generate_rules_for_row:                    
-                    E1_generated_rules.add("(" + ' or '.join(generate_rules_for_row) + ")")    
-            
+                            set_rules_for_value.append(f"{E2_column} < {E2_value}") 
+                #
+                if set_rules_for_value: 
+                    generate_rules_for_row.add(tuple(set_rules_for_value))
+            # 
+            rules_after_absorb = custom_absorption_law(sorted(generate_rules_for_row, key=len))
+
             # Add the set of generated rules for the current E1 row to the set of rules between E1 and E2.
-            rules_between_E1_and_E2.add("(" + ' and '.join(E1_generated_rules) + ")")
+            rules_between_E1_and_E2.add("(" + rules_after_absorb + ")")
             
         # Combine all generated rules into a single string.
         Generated_Rules: str = "(" + ' or '.join(rules_between_E1_and_E2) + ")"
@@ -185,18 +230,12 @@ def main() -> None:
     dataset = bank_marketing.data.original
 
     # Attributes to consider.
-    my_attributes = ['age', 'job', 'marital', 'education', 'default', 
-                     'balance', 'housing', 'loan', 'contact', 'duration']
-    my_attributes = ['age', 'job', 'education', 'balance', 'housing', 'loan']
-  
+    my_attributes = ['age', 'job', 'marital', 'education', 'duration', 'balance']
 
-    # my_attributes = ['job', 'marital', 'education']
     # 
     processed_dataset = preprocess_data(dataset)
-    separated_data = separation_data(processed_dataset, 100, my_attributes)
+    separated_data = separation_data(processed_dataset, 40, my_attributes)
 
-    # print(processed_dataset.info())
-    # print(processed_dataset.head())
     # Train and generate rules.
     E1_train, E2_train = separated_data['E1'][0].reset_index(drop=True), separated_data['E2'][0].reset_index(drop=True)
     Generated_Rules = aq11(E1_train, E2_train)
