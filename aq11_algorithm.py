@@ -185,7 +185,7 @@ def aq11(E1: pd.DataFrame, E2: pd.DataFrame, Generated_Rules: str = None) -> str
 
         # Iterate through each row in E1 DataFrame to calculate True Positives (TP) and False Negatives (FN)
         for _, E1_row in E1.iterrows():
-            # Create metadata for the current row in E1 DataFrame.
+            # Create metadata for the current row in E1 DataFrame
             metadata = create_metadata(E1_row)
 
             # Evaluate the generated rules using the metadata
@@ -269,7 +269,7 @@ def main() -> None:
     E1_test, E2_test = separated_data['E1'][1].reset_index(drop=True), separated_data['E2'][1].reset_index(drop=True)
     metrics_data = aq11(E1_test, E2_test, Generated_Rules)
 
-    # Display evaluation metrics. 
+    # Display evaluation metrics
     evaluate_metrics(metrics_data['TP'], metrics_data['TN'], metrics_data['FP'], metrics_data['FN'])  
 
 # Execute main function
