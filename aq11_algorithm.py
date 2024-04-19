@@ -130,7 +130,7 @@ def aq11(E1: pd.DataFrame, E2: pd.DataFrame, Generated_Rules: str = None) -> str
         # Iterate through each row in E1
         for _, E1_row in E1.iterrows():
             generate_rules_for_row: set[tuple[str]] = set()
-            
+
             '''
             Create metadata for current E1 row.
             If any of the rules are satisfied by the metadata of the current row,
@@ -245,6 +245,9 @@ def main() -> None:
     bank_marketing = fetch_ucirepo(id=222) 
     dataset = bank_marketing.data.original
 
+    # Set the number of rows to be considered in the dataset
+    number_rows = 100
+
     # Define the target variable
     target = 0 
 
@@ -253,7 +256,7 @@ def main() -> None:
 
     # Preprocess the dataset and separate data into training and testing sets
     processed_dataset = preprocess_data(dataset)
-    separated_data = separation_data(processed_dataset, 100, target, my_attributes)
+    separated_data = separation_data(processed_dataset, number_rows, target, my_attributes)
 
     # Train and generate rules
     E1_train, E2_train = separated_data['E1'][0].reset_index(drop=True), separated_data['E2'][0].reset_index(drop=True)
