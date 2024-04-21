@@ -65,10 +65,44 @@ After selecting the AQ11 algorithm for implementation, the decision was made to 
 | y        | Target | Binary     | Target attribute indicating whether the client subscribed to a term deposit. |
 
 ## Implementing Algorithm
-...
+This section provides a concise overview of each individual function for a better understanding of the code itself, which is located in the file `aq11_algorithm.py`.
+
+1. **Preprocess Data**: This function serves as a custom preprocessing tool, tailored to specific requirements rather than being universally applicable. It involves selecting attributes and potentially reducing the dataset size to prepare the DataFrame for further analysis.
+
+2. **Separation Data**: This function takes a DataFrame, the number of rows, the target variable, and a list of attributes as parameters. Its primary purpose is to divide the data into training and testing datasets. The function first separates the data based on the target variable `'y'`, then samples the specified number of rows for each subset. Finally, it splits the data into ***training*** and ***testing*** sets using the `train_test_split` function. The function returns a dictionary containing the training and testing sets for both subsets `'E1'` and `'E2'`.
+
+3. **AQ11 Algorithm**: This function serves as the core of the algorithm, where we either generate rules or obtain a dictionary of predicted data using the generated rules. Within the function, there are two auxiliary functions: `create_metadata` and `custom_absorption_law`. Creating metadata is essential for retaining attribute values, while the absorption function simplifies rules within a single example to all counterexamples. The principle of the algorithm is implemented in accordance with the materials provided above, which would require a substantial explanation of its logic. Notably, we utilized the `eval` method for checking attribute values against rules, despite its potential risks. Additionally, we employed the `join` method to concatenate conditions.
+
+4. **Evaluation**: This function calculates various evaluation metrics based on the provided True Positive (TP), True Negative (TN), False Positive (FP), and False Negative (FN) values. It computes `precision`, `recall`, `F1-score`, `accuracy`, and `error rate`. Additionally, it generates a confusion matrix table and a metrics table for visualization and interpretation of the evaluation results.
+
+5. **Main**: The final function orchestrates the entire process, starting with fetching the dataset, performing data preprocessing, initializing parameters for data separation into training and testing sets, generating rules using the AQ11 algorithm, attempting to predict using the same method but with test data, and finally evaluating the performance.
 
 ## Conclusion 
-... 
+The outcome of all this work can be considered satisfactory. In terms of code implementation, there may be some shortcomings, but overall, I did not find any glaring errors during the final checks, although it's possible that some issues could be attributed to human error on my part. However, the main concern lies with the algorithm itself, which is not the latest version of the AQ branch algorithm. Additionally, the AQ11 algorithm's ability to create overlapping boundaries between different classes in certain feature spaces may complicate result interpretation, potentially leading to confusion in determining an object's class membership. 
+
+During the evaluation and hyperparameter tuning, such as the number of attributes, rows, and selection of the target variable, it can be noted that the algorithm achieves an **accuracy** between `50% to 70%` in **90%** of cases with `8 attributes` and `100 rows`. This is considered a reasonably good result, considering all the issues mentioned above.
+
+Here is an example of the generated rules, confusion matrix, and performance metrics for `30 rows` with `8 attributes` that are outputted to the console to demonstrate the correctness of the algorithm's operation. 
+
+```
+Generated Rules:
+(((job != 'student' or loan != 'no') and (age < 2 or marital != 'married' or loan != 'no') and (age < 1 or marital != 'married' or loan != 'no') and (duration < 2 or age < 2 or marital != 'married' or loan != 'no') and (marital != 'married' or age < 1 or loan != 'no' or duration < 2) and (age < 2 or marital != 'married' or balance < 2 or loan != 'no') and (marital != 'married' or age < 1 or loan != 'no' or balance < 2) and (education != 'tertiary' or age < 2 or marital != 'married' or loan != 'no') and (age < 1 or marital != 'married' or loan != 'no' or duration < 2 or job != 'technician')) or ((education != 'secondary') and (balance < 2 or education != 'secondary') and (age < 2 or job != 'retired' or marital != 'married' or duration < 2) and (job != 'retired' or age < 2 or marital != 'married' or education != 'secondary') and (education != 'tertiary' or job != 'retired' or age < 2 or marital != 'married') and (age < 1 or marital != 'married' or duration < 2 or education != 'secondary' or job != 'technician')) or ((balance < 2 or marital != 'married' or education != 'secondary') and (marital != 'married' or age > 0 or housing != 'no' or duration > 2) and (housing != 'no' or duration > 2 or age > 0 or marital != 'single') and (age < 2 or marital != 'married' or housing != 'no' or duration > 2 or education != 'secondary') and (job != 'retired' or marital != 'married' or age < 2 or housing != 'no' or duration > 2) and (job != 'retired' or age < 2 or housing != 'no' or duration > 2 or education != 'secondary') and (job != 'retired' or marital != 'married' or age < 2 or housing != 'no' or duration > 2 or education != 'secondary') and (job != 'retired' or marital != 'married' or age < 2 or duration > 2 or housing != 'no' or balance < 2) and (marital != 'single' or age > 0 or duration > 2 or housing != 'no' or job != 'student' or education != 'secondary')))
+
+Confusion Matrix: 
++---------------+----+----------------+----+
+| True Positive | 14 | False Negative | 1  |
+| True Negative | 5  | False Positive | 10 |
++---------------+----+----------------+----+
+
+Performance Metrics: 
++------------+-----+
+| Precision  | 58% |
+|   Recall   | 93% |
+|  F1-Score  | 72% |
+|  Accuracy  | 63% |
+| Error Rate | 37% |
++------------+-----+
+```
 
 ## Author 
 My name is Dmytro Varich, and I am a student at [TUKE](https://www.tuke.sk/wps/portal) University, majoring in Intelligent Systems. This documentation is intended for the completion of Assignment 1 in the subject of Machine Learning. Similar content is also shared on my [Telegram](https://t.me/varich_channel) channel.
