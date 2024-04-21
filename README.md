@@ -89,18 +89,18 @@ Generated Rules:
 (((job != 'student' or loan != 'no') and (age < 2 or marital != 'married' or loan != 'no') and (age < 1 or marital != 'married' or loan != 'no') and (duration < 2 or age < 2 or marital != 'married' or loan != 'no') and (marital != 'married' or age < 1 or loan != 'no' or duration < 2) and (age < 2 or marital != 'married' or balance < 2 or loan != 'no') and (marital != 'married' or age < 1 or loan != 'no' or balance < 2) and (education != 'tertiary' or age < 2 or marital != 'married' or loan != 'no') and (age < 1 or marital != 'married' or loan != 'no' or duration < 2 or job != 'technician')) or ((education != 'secondary') and (balance < 2 or education != 'secondary') and (age < 2 or job != 'retired' or marital != 'married' or duration < 2) and (job != 'retired' or age < 2 or marital != 'married' or education != 'secondary') and (education != 'tertiary' or job != 'retired' or age < 2 or marital != 'married') and (age < 1 or marital != 'married' or duration < 2 or education != 'secondary' or job != 'technician')) or ((balance < 2 or marital != 'married' or education != 'secondary') and (marital != 'married' or age > 0 or housing != 'no' or duration > 2) and (housing != 'no' or duration > 2 or age > 0 or marital != 'single') and (age < 2 or marital != 'married' or housing != 'no' or duration > 2 or education != 'secondary') and (job != 'retired' or marital != 'married' or age < 2 or housing != 'no' or duration > 2) and (job != 'retired' or age < 2 or housing != 'no' or duration > 2 or education != 'secondary') and (job != 'retired' or marital != 'married' or age < 2 or housing != 'no' or duration > 2 or education != 'secondary') and (job != 'retired' or marital != 'married' or age < 2 or duration > 2 or housing != 'no' or balance < 2) and (marital != 'single' or age > 0 or duration > 2 or housing != 'no' or job != 'student' or education != 'secondary')))
 
 Confusion Matrix: 
-+---------------+----+----------------+----+
-| True Positive | 14 | False Negative | 1  |
-| True Negative | 5  | False Positive | 10 |
-+---------------+----+----------------+----+
++---------------+----+----------------+---+
+| True Positive | 14 | False Negative | 1 |
+| True Negative | 6  | False Positive | 9 |
++---------------+----+----------------+---+
 
 Performance Metrics: 
 +------------+-----+
-| Precision  | 58% |
+| Precision  | 61% |
 |   Recall   | 93% |
-|  F1-Score  | 72% |
-|  Accuracy  | 63% |
-| Error Rate | 37% |
+|  F1-Score  | 74% |
+|  Accuracy  | 67% |
+| Error Rate | 33% |
 +------------+-----+
 ```
 
